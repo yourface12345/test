@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>방탈출: 물놀이 안전 수칙!</title>
+    <style>
+        /* --- 공통 스타일 --- */
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: #333; display: flex; justify-content: center; align-items: center;
+        }
+
+        #timer-display {
+            display: none; position: fixed; top: 20px; right: 20px;
+            background-color: rgba(0, 0, 0, 0.7); color: white;
+            padding: 10px 20px; font-size: 1.8rem; font-weight: bold;
+            border-radius: 10px; z-index: 1001; border: 2px solid #fff;
+            transition: color 0.5s, border-color 0.5s;
+        }
+
+        .game-level {
+            position: relative; width: 100%; max-width: 1200px;
+            margin: auto; aspect-ratio: 1200 / 800;
+        }
+
+        .background-img {
+            width: 100%; height: 100%; display: block; border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .clickable-object {
+            position: absolute; cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(255, 255, 0, 0.8); }
+            50% { border-color: rgba(255, 255, 255, 1); }
+            100% { border-color: rgba(255, 255, 0, 0.8); }
+        }
+
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center;
+            padding: 20px; box-sizing: border-box;
+        }
+        .modal-content {
+            background-color: #fff; padding: 25px 30px; border-radius: 15px; width: 90%; max-width: 550px; text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: appear 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        @keyframes appear { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .close-btn { color: #888; position: absolute; top: 10px; right: 15px; font-size: 32px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #000; }
+        h2 { margin-top: 0; color: #333; }
+        p { line-height: 1.6; color: #555; }
+        input { padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
+        button { padding: 12px 25px; font-size: 1.1rem; cursor: pointer; color: white; border: none; border-radius: 8px; transition: background-color 0.2s; }
+        .start-form input { margin-bottom: 10px; }
+        .retry-btn { background-color: #007bff; }
+        .retry-btn:hover { background-color: #0056b3; }
+        .quiz-option { display: block; width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; background-color: #fff; cursor: pointer; border-radius: 8px; font-size: 1rem; transition: all 0.2s; color: #333; }
+        .quiz-option:hover { background-color: #f0f8ff; border-color: #4a90e2; }
+        .password-input { width: 70%; font-size: 24px; margin: 20px 0; letter-spacing: 5px; }
+        .password-submit { background-color: #5cb85c; }
+        .password-submit:hover { background-color: #4cae4c; }
+
+        /* --- 1단계: 교실 스타일 (노란색 점선 보임) --- */
+        #classroom-level .clickable-object {
+            border: 3px dashed transparent; /* 평소에는 투명 */
+            transition: border-color 0.2s; /* 부드러운 효과 */
+        }
+        #classroom-level .clickable-object:hover {
+            border-color: rgba(255, 255, 0, 0.8); /* 마우스 올리면 노란색 */
+        }
+        #chalkboard { top: 18%; left: 16%; width: 29%; height: 20%; }
+        #teacher-desk { top: 41%; left: 38.5%; width: 14.5%; height: 14%; }
+        #student-desk { top: 55.5%; left: 26%; width: 20%; height: 19%; }
+        #student-chair { top: 63.5%; left: 62.5%; width: 10.5%; height: 30%; }
+        /* 교실 문 위치 최종 정밀 조정 */
+        #door { top: 5%; left: 70%; width: 9.5%; height: 48%; }
+
+        /* --- 2단계: 강당 스타일 (평소에 숨김, 마우스 올리면 표시) --- */
+        #auditorium-level .clickable-object {
+            border: 3px dashed transparent; /* 평소에는 투명 */
+            transition: border-color 0.2s; /* 부드러운 효과 */
+        }
+        #auditorium-level .clickable-object:hover {
+            border-color: rgba(255, 255, 0, 0.8); /* 마우스 올리면 노란색 */
+        }
+        #stage { top: 43%; left: 53%; width: 45%; height: 55%; }
+        #projector { top: 28%; left: 65%; width: 8%; height: 9%; }
+        #speaker { top: 47%; left: 48%; width: 6%; height: 21%; }
+        #stairway-arch { top: 60%; left: 4%; width: 26%; height: 38%; }
+        #main-light { top: 5%; left: 68%; width: 15%; height: 16%; }
+    </style>
+</head>
+<body>
+
+    <div id="timer-display"></div>
+
+    <div id="start-modal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>안전 물놀이 방탈출</h2>
+            <p>안전 수칙을 배우며 교실과 강당을 탈출하세요!<br>시작하기 전, 정보를 입력해주세요.</p>
+            <div class="start-form">
+                <input type="text" id="grade-input" placeholder="학년 (예: 3)">
+                <input type="text" id="class-input" placeholder="반 (예: 2)">
+                <input type="text" id="name-input" placeholder="이름 (예: 홍길동)">
+            </div>
+            <button id="start-game-btn" style="background-color: #007bff;">게임 시작!</button>
+        </div>
+    </div>
+
+    <div id="classroom-level" class="game-level" style="display: none;">
+        <img class="background-img" src="https://github.com/yourface12345/test/blob/main/Whisk_storyboardb100255620cf48ed8f8d99cb.png?raw=true" alt="교실 배경 이미지">
+        <div class="clickable-object" id="chalkboard"></div>
+        <div class="clickable-object" id="teacher-desk"></div>
+        <div class="clickable-object" id="student-desk"></div>
+        <div class="clickable-object" id="student-chair"></div>
+        <div class="clickable-object" id="door"></div>
+    </div>
+
+    <div id="auditorium-level" class="game-level" style="display: none;">
+        <img class="background-img" src="https://i.postimg.cc/c4xGkNYB/Whisk-storyboarddd5074218fcb460694b57ef9.jpg" alt="강당 배경 이미지">
+        <div class="clickable-object" id="stage"></div>
+        <div class="clickable-object" id="projector"></div>
+        <div class="clickable-object" id="speaker"></div>
+        <div class="clickable-object" id="stairway-arch"></div>
+        <div class="clickable-object" id="main-light"></div>
+    </div>
+
+    <!-- 교실 모달들 -->
+    <div id="c-hint-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>힌트</h2><p>교실에 있는 사물들을 눌러 물놀이 안전 퀴즈를 풀어보세요.</p></div></div>
+    <div id="c-quiz1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>교실 퀴즈 1</h2><p><strong>문제:</strong> 깊은 물에 들어가기 전, 심장이 놀라지 않도록 몸에 물을 적셔주어야 합니다. 올바른 순서는?</p><button class="quiz-option" onclick="checkClassroomAnswer(1, false)">얼굴 → 가슴 → 다리</button><button class="quiz-option" onclick="checkClassroomAnswer(1, true)">다리 → 팔 → 가슴 → 얼굴</button><button class="quiz-option" onclick="checkClassroomAnswer(1, false)">가슴 → 팔 → 다리</button></div></div>
+    <div id="c-quiz2-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>교실 퀴즈 2</h2><p><strong>문제:</strong> 물에 빠진 사람을 발견했을 때, 가장 먼저 할 일은?</p><button class="quiz-option" onclick="checkClassroomAnswer(2, false)">직접 뛰어들어 구한다.</button><button class="quiz-option" onclick="checkClassroomAnswer(2, true)">주변에 알리고 119 신고 후 도구를 던져준다.</button><button class="quiz-option" onclick="checkClassroomAnswer(2, false)">위험하므로 그 자리를 피한다.</button></div></div>
+    <div id="c-minigame-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>단서</h2><p>의자 밑에 쪽지가 떨어져 있다.<br><strong>"비밀번호의 뒤 두 자리는 25입니다."</strong></p></div></div>
+    <div id="c-password-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>교실 비밀번호</h2><p>알아낸 4자리 비밀번호를 입력하세요.</p><input type="number" class="password-input" id="c-password-input" maxlength="4" placeholder="••••"><button class="password-submit" id="c-password-submit">탈출 시도</button></div></div>
+
+    <!-- 강당 모달들 -->
+    <div id="a-hint-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>힌트</h2><p>강당의 여러 장치들을 살펴보세요. 어딘가에 다음 단계로 나아갈 단서가 숨겨져 있을 겁니다.</p></div></div>
+    <div id="a-quiz1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>강당 퀴즈 1</h2><p><strong>문제:</strong> 물놀이 중 쥐가 났을 때 올바른 대처법이 <strong>아닌</strong> 것은?</p><button class="quiz-option" onclick="checkAuditoriumAnswer(1, true)">당황해서 몸을 심하게 움직인다.</button><button class="quiz-option" onclick="checkAuditoriumAnswer(1, false)">몸의 힘을 빼고 편안한 자세를 취한다.</button><button class="quiz-option" onclick="checkAuditoriumAnswer(1, false)">주변에 도움을 요청한다.</button></div></div>
+    <div id="a-quiz2-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>강당 퀴즈 2</h2><p><strong>문제:</strong> 안전한 물놀이를 위해 파도가 높거나 물이 차가울 때, 꼭 착용해야 하는 것은?</p><button class="quiz-option" onclick="checkAuditoriumAnswer(2, false)">선글라스</button><button class="quiz-option" onclick="checkAuditoriumAnswer(2, true)">구명조끼</button><button class="quiz-option" onclick="checkAuditoriumAnswer(2, false)">예쁜 수영복</button></div></div>
+    <div id="a-password-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>강당 비밀번호</h2><p>강당 비상구의 잠금장치다. 알아낸 4자리 비밀번호를 입력하자.</p><input type="number" class="password-input" id="a-password-input" maxlength="4" placeholder="••••"><button class="password-submit" id="a-password-submit">탈출 시도</button></div></div>
+
+    <!-- 공통 모달들 -->
+    <div id="success-modal" class="modal"><div class="modal-content"><h2>최종 탈출 성공!</h2><p><strong id="user-info-display" style="font-size: 1.2rem; color: #007bff;"></strong> 학생, 축하합니다!</p><p>모든 안전 수칙을 배우고 무사히 탈출했습니다!</p></div></div>
+    <div id="game-over-modal" class="modal"><div class="modal-content"><h2 style="color: #d9534f;">시간 초과!</h2><p>아쉽지만 제한 시간 내에 탈출하지 못했습니다.</p><button class="retry-btn" onclick="location.reload()">다시 시작</button></div></div>
+
+    <script>
+        let userInfo;
+        const timerDisplay = document.getElementById('timer-display');
+        let timeRemaining;
+        let timerInterval;
+
+        const classroomLevel = document.getElementById('classroom-level');
+        const auditoriumLevel = document.getElementById('auditorium-level');
+
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            const gradeInput = document.getElementById('grade-input').value;
+            const classInput = document.getElementById('class-input').value;
+            const nameInput = document.getElementById('name-input').value;
+            if (gradeInput && classInput && nameInput) {
+                userInfo = { grade: gradeInput, classNum: classInput, name: nameInput };
+                document.getElementById('start-modal').style.display = 'none';
+                startClassroomLevel();
+            } else {
+                alert('학년, 반, 이름을 모두 입력해주세요!');
+            }
+        });
+
+        function startClassroomLevel() {
+            timeRemaining = 300;
+            classroomLevel.style.display = 'block';
+            startTimer();
+        }
+
+        function startAuditoriumLevel() {
+            alert("교실 탈출 성공! 다음 장소인 강당으로 이동합니다.");
+            classroomLevel.style.display = 'none';
+            auditoriumLevel.style.display = 'block';
+            clearInterval(timerInterval);
+            timeRemaining = 600;
+            startTimer();
+        }
+
+        function startTimer() {
+            timerDisplay.style.display = 'block';
+            timerDisplay.style.color = 'white';
+            timerDisplay.style.borderColor = 'white';
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                if (timeRemaining < 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            if (timeRemaining < 0) return;
+            const minutes = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
+            const seconds = String(timeRemaining % 60).padStart(2, '0');
+            timerDisplay.textContent = `${minutes}:${seconds}`;
+            if (timeRemaining < 60) {
+                timerDisplay.style.color = '#ff4757';
+                timerDisplay.style.borderColor = '#ff4757';
+            }
+        }
+
+        function gameOver() {
+            clearInterval(timerInterval);
+            hideAllModals();
+            showModal('game-over-modal');
+        }
+
+        function showModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function hideAllModals() { document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none'); }
+        document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', hideAllModals));
+        
+        const clickableObjects = {
+            'chalkboard': 'c-quiz1-modal', 'teacher-desk': 'c-hint-modal', 'student-desk': 'c-quiz2-modal', 'student-chair': 'c-minigame-modal', 'door': 'c-password-modal',
+            'stage': 'a-quiz1-modal', 'projector': 'a-quiz2-modal', 'speaker': 'a-hint-modal', 'stairway-arch': 'a-password-modal', 'main-light': 'a-hint-modal'
+        };
+        Object.keys(clickableObjects).forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('click', () => showModal(clickableObjects[id]));
+            }
+        });
+
+        function checkClassroomAnswer(quizNum, isCorrect) {
+            if (isCorrect) {
+                hideAllModals();
+                if (quizNum === 1) setTimeout(() => alert("정답입니다! 비밀번호의 앞 두 자리는 '20' 입니다."), 100);
+            } else { alert("오답입니다. 다시 한번 생각해 보세요!"); }
+        }
+
+        document.getElementById('c-password-submit').addEventListener('click', () => {
+            if (document.getElementById('c-password-input').value === '2025') {
+                hideAllModals();
+                startAuditoriumLevel();
+            } else { alert('비밀번호가 일치하지 않습니다.'); }
+        });
+
+        function checkAuditoriumAnswer(quizNum, isCorrect) {
+            if (isCorrect) {
+                hideAllModals();
+                if (quizNum === 1) setTimeout(() => alert("정답입니다! 비밀번호의 앞 두 자리는 '11' 입니다."), 100);
+                else if (quizNum === 2) setTimeout(() => alert("정답입니다! 비밀번호의 뒤 두 자리는 '92' 입니다."), 100);
+            } else { alert("오답입니다. 다시 한번 생각해 보세요!"); }
+        }
+
+        document.getElementById('a-password-submit').addEventListener('click', () => {
+            if (document.getElementById('a-password-input').value === '1192') {
+                clearInterval(timerInterval);
+                document.getElementById('user-info-display').textContent = `${userInfo.grade}학년 ${userInfo.classNum}반 ${userInfo.name}`;
+                hideAllModals();
+                showModal('success-modal');
+            } else { alert('비밀번호가 일치하지 않습니다.'); }
+        });
+    </script>
+</body>
+</html>
